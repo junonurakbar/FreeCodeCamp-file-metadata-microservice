@@ -1,6 +1,12 @@
 const express = require('express');
 const cors = require('cors');
-const upload = require('./utils/multerFile')
+
+const mongoose = require('mongoose');
+mongoose.connect(process.env.MONGO_URI)
+const File = require('./models/fileSchema')
+
+const {upload, storage} = require('./utils/multerFile')
+
 require('dotenv').config()
 
 const app = express();
@@ -12,12 +18,17 @@ app.get('/', function (req, res) {
   res.sendFile(process.cwd() + '/views/index.html');
 });
 
-app.post('/api/fileanalyse', upload.single('upfile'), (req, res) => {
-  res.json({
-    name: req.file.originalname,
+app.post('/api/fileanalyse', upload.single('upfile'), async (req, res) => {
+  const file = new File({
+    name: req.file.filename,
     type: req.file.mimetype,
-    size: req.file.size
+    size: req.file.size,
   })
+  try {
+    await file.save()
+    res.json({file})    
+  }
+  catch (e) {res.json({error: e})}
 })
 
 
